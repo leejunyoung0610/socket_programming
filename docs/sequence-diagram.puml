@@ -1,0 +1,48 @@
+@startuml
+' Simple Java Server - Request Handling Sequence
+
+title Simple Java Server - Request Handling Sequence
+
+actor Client
+participant "ServerMain" as Main
+participant "NetAcceptor" as Acceptor
+participant "ConnectionWorker" as Worker
+participant "HttpRequestParser" as Parser
+participant "Router" as Router
+participant "StaticFileHandler" as Handler
+participant "HttpResponseWriter" as Writer
+participant "ConnectionPolicy" as Policy
+
+Client -> Main: run()
+Main -> Main: ensureWebRoot()
+Main -> Main: create StaticFileHandler, Router
+Main -> Acceptor: new NetAcceptor(router)
+Main -> Acceptor: start()
+
+Acceptor -> Acceptor: bind ServerSocket & init thread pool
+loop accept loop
+  Client -> Acceptor: TCP connect
+  Acceptor -> Worker: submit ConnectionWorker(socket)
+end
+
+== Worker thread ==
+Worker -> Worker: setSoTimeout()
+Worker -> Parser: parse(in)
+alt 정상 요청
+  Parser --> Worker: HttpRequest
+  Worker -> Router: route(request)
+  Router -> Handler: handle(request)
+  Handler --> Router: HttpResponse
+  Router --> Worker: HttpResponse
+  Worker -> Policy: shouldKeepAlive(request, count)
+  Policy --> Worker: keepAlive flag
+  Worker -> Writer: write(out, response, includeBody)
+  Writer --> Worker: flush
+else 파싱 오류
+  Parser -> Worker: HttpParseException
+  Worker -> Writer: send 400 (if socket alive)
+end
+Worker -> Worker: loop until keepAlive false or client closes
+Worker -> Client: close connection
+
+@enduml

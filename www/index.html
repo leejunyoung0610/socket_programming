@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>콘텐츠 갤러리 및 뷰어 (외부 Manifest 로딩)</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#1D4ED8',
+                        'secondary-gray': '#F3F4F6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 커스텀 스크롤바 스타일 */
+        #content-list {
+            max-height: calc(100vh - 4rem); /* 헤더 높이를 제외 */
+            overflow-y: auto;
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        #content-list::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+<!-- 헤더 -->
+<header class="bg-white shadow-md p-4 sticky top-0 z-10">
+    <h1 class="text-2xl font-bold text-primary-blue">
+        📦 콘텐츠 갤러리 및 뷰어 (외부 Manifest 로딩)
+    </h1>
+    <p class="text-sm text-gray-500 mt-1">
+        왼쪽 목록에서 항목을 선택하면 콘텐츠가 로드됩니다.
+    </p>
+</header>
+
+<!-- 메인 레이아웃 (반응형 2단 그리드) -->
+<main class="flex flex-1 overflow-hidden">
+
+    <!-- 1. 콘텐츠 목록 섹션 (사이드바) -->
+    <aside id="content-list" class="w-full md:w-1/4 bg-secondary-gray border-r border-gray-200 p-4 flex-shrink-0">
+
+        <!-- 글 섹션 컨테이너 -->
+        <h2 class="text-lg font-semibold mb-3 mt-1 text-gray-700 border-b pb-2 flex items-center">
+            <span class="text-xl mr-2">📝</span> 글 섹션
+        </h2>
+        <ul id="text-list-container" class="space-y-2 mb-6">
+            <!-- JS로 글 목록 채우기 -->
+        </ul>
+
+        <!-- 이미지 섹션 컨테이너 -->
+        <h2 class="text-lg font-semibold mb-3 mt-6 text-gray-700 border-b pb-2 flex items-center">
+            <span class="text-xl mr-2">🖼️</span> 이미지 섹션
+        </h2>
+        <ul id="image-list-container" class="space-y-2">
+            <!-- JS로 이미지 목록 채우기 -->
+        </ul>
+
+        <!-- 로딩 메시지를 목록 컨테이너 내부로 이동하여 로딩 상태를 표시 -->
+        <div id="sidebar-loading-message" class="text-center p-4">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-blue mx-auto"></div>
+            <p class="text-sm text-primary-blue mt-2">콘텐츠 목록 로딩 중...</p>
+        </div>
+
+        <!-- 메인 뷰어 로딩 메시지 (기존 위치 유지) -->
+        <div id="loading-message" class="text-center p-4 hidden">
+            <!-- 이 메시지는 콘텐츠 로딩 시에만 사용됩니다. -->
+        </div>
+    </aside>
+
+    <!-- 2. 콘텐츠 뷰어 섹션 (메인 영역) -->
+    <section id="content-viewer" class="flex-1 p-6 overflow-y-auto bg-white">
+        <div id="viewer-container" class="max-w-4xl mx-auto">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">콘텐츠를 선택해 주세요</h2>
+            <p class="text-gray-500">
+                왼쪽 목록에서 보고 싶은 글이나 이미지를 클릭하세요.
+            </p>
+        </div>
+
+        <!-- 에러 메시지 표시 영역 -->
+        <div id="error-box" class="hidden mt-8 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong class="font-bold">⚠️ 오류 발생:</strong>
+            <span class="block sm:inline" id="error-message"></span>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    // === 동적 로딩을 위한 설정: 외부 JSON 파일 경로 ===
+    // 사용자가 업데이트할 목록 파일 경로입니다.
+    const API_URL = '/content_manifest.json';
+
+    // 현재 로드된 콘텐츠 목록을 저장할 변수
+    let contents = [];
+
+    // DOM 요소 참조
+    const textListContainer = document.getElementById('text-list-container');
+    const imageListContainer = document.getElementById('image-list-container');
+    const viewerContainer = document.getElementById('viewer-container');
+    const errorBox = document.getElementById('error-box');
+    const errorMessage = document.getElementById('error-message');
+    const loadingMessage = document.getElementById('loading-message');
+    const sidebarLoadingMessage = document.getElementById('sidebar-loading-message');
+
+    /**
+     * @description 에러 메시지를 표시합니다.
+     * @param {string} msg - 표시할 오류 메시지
+     */
+    function showError(msg) {
+        errorBox.classList.remove('hidden');
+        errorMessage.textContent = msg;
+        loadingMessage.classList.add('hidden');
+    }
+
+    /**
+     * @description 에러 메시지를 숨깁니다.
+     */
+    function hideError() {
+        errorBox.classList.add('hidden');
+    }
+
+    /**
+     * @description 메인 뷰어의 로딩 상태를 토글합니다.
+     * @param {boolean} isLoading - 로딩 상태 여부
+     */
+    function toggleLoading(isLoading) {
+        if (isLoading) {
+            viewerContainer.innerHTML = ''; // 기존 내용 삭제
+            loadingMessage.classList.remove('hidden');
+        } else {
+            loadingMessage.classList.add('hidden');
+        }
+    }
+
+    /**
+     * @description 외부 JSON 파일로부터 콘텐츠 목록을 비동기적으로 가져옵니다.
+     */
+    async function fetchContents() {
+        sidebarLoadingMessage.classList.remove('hidden');
+
+        try {
+            console.log('Fetching manifest from:', API_URL); // 디버깅 로그 1: 로드 시작
+            // 외부 JSON 파일 fetch 시도
+            const response = await fetch(API_URL);
+
+            if (!response.ok) {
+                throw new Error(`목록 파일 로드 실패: ${response.status} ${response.statusText}. CORS/경로 확인 필요.`);
+            }
+
+            // JSON 파싱
+            contents = await response.json();
+
+            console.log('Manifest loaded successfully. Item count:', contents.length); // 디버깅 로그 2: 성공 및 항목 수 확인
+
+            if (!Array.isArray(contents)) {
+                throw new Error("콘텐츠 Manifest 파일의 형식이 올바르지 않습니다. JSON 배열이어야 합니다.");
+            }
+
+        } catch (error) {
+            console.error("콘텐츠 목록 로딩 중 오류 발생:", error);
+            // 사이드바에 오류 메시지 표시
+            textListContainer.innerHTML = `<li class="text-red-500 text-sm">목록 로딩 실패: ${error.message}</li>`;
+            imageListContainer.innerHTML = '';
+        } finally {
+            sidebarLoadingMessage.classList.add('hidden');
+        }
+    }
+
+    /**
+     * @description 콘텐츠 목록을 사이드바에 렌더링합니다.
+     */
+    function renderList() {
+        textListContainer.innerHTML = ''; // 글 목록 초기화
+        imageListContainer.innerHTML = ''; // 이미지 목록 초기화
+
+        const textItems = contents.filter(item => item.type === 'text');
+        const imageItems = contents.filter(item => item.type === 'image');
+
+        // 글 섹션 렌더링
+        if (textItems.length > 0) {
+            textItems.forEach(item => { appendListItem(item, textListContainer); });
+        } else {
+            textListContainer.innerHTML = `<li class="text-gray-500 text-sm">표시할 글이 없습니다.</li>`;
+        }
+
+        // 이미지 섹션 렌더링
+        if (imageItems.length > 0) {
+            imageItems.forEach(item => { appendListItem(item, imageListContainer); });
+        } else {
+            imageListContainer.innerHTML = `<li class="text-gray-500 text-sm">표시할 이미지가 없습니다.</li>`;
+        }
+    }
+
+    /**
+     * @description 단일 목록 항목을 생성하고 컨테이너에 추가합니다.
+     * @param {object} item - 콘텐츠 항목 객체
+     * @param {HTMLElement} container - 항목을 추가할 <ul> 컨테이너
+     */
+    function appendListItem(item, container) {
+        const li = document.createElement('li');
+        const button = document.createElement('button');
+
+        // 항목 타입에 따른 아이콘 설정
+        const icon = item.type === 'text'
+            ? '<span class="mr-2 text-primary-blue">📖</span>'
+            : '<span class="mr-2 text-primary-blue">📷</span>';
+
+        button.className = 'w-full text-left p-3 rounded-lg hover:bg-white transition duration-200 flex items-center shadow-sm';
+        button.innerHTML = `${icon} <span class="truncate">${item.title}</span>`;
+
+        // 클릭 이벤트 핸들러
+        button.onclick = (e) => loadContent(item, e.currentTarget);
+
+        li.appendChild(button);
+        container.appendChild(li);
+    }
+
+    /**
+     * @description 파일 경로에서 파일 확장자를 추출하여 타입을 반환합니다.
+     * @param {string} path - 파일 경로
+     * @returns {string} - 파일 확장자 (예: 'md', 'txt', 'jpg')
+     */
+    function getFileExtension(path) {
+        return path.split('.').pop();
+    }
+
+
+    /**
+     * @description API 경로에서 콘텐츠를 가져와 뷰어에 표시합니다.
+     * @param {object} item - Manifest에 정의된 콘텐츠 항목 객체
+     * @param {HTMLElement} clickedButton - 현재 클릭된 버튼 요소
+     */
+    async function loadContent(item, clickedButton) {
+        // 모든 목록 버튼에서 active 스타일 제거
+        document.querySelectorAll('#content-list button').forEach(btn => {
+            btn.classList.remove('bg-white', 'font-bold', 'text-primary-blue', 'ring-2', 'ring-primary-blue');
+        });
+
+        // 현재 클릭된 버튼에 active 스타일 추가
+        clickedButton.classList.add('bg-white', 'font-bold', 'text-primary-blue', 'ring-2', 'ring-primary-blue');
+
+        hideError();
+        toggleLoading(true);
+
+        try {
+            // 이미지가 placeholder 설정되어 있을 경우, 실제 fetch 대신 placeholder 이미지 사용
+            if (item.type === 'image' && item.placeholder) {
+                const imageUrl = `https://placehold.co/${item.placeholder}`;
+                viewerContainer.innerHTML = `
+                        <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800">${item.title}</h3>
+                            <div class="relative w-full overflow-hidden rounded-xl bg-gray-50 p-2">
+                                <img src="${imageUrl}" alt="${item.title}" class="w-full h-auto object-cover rounded-lg" onerror="this.onerror=null;this.src='https://placehold.co/800x600/cccccc/000000?text=Image+Load+Failed';" />
+                            </div>
+                            <p class="mt-4 text-gray-600 text-sm">
+                                이미지 타입: <strong>JPG/PNG (플레이스홀더)</strong> |
+                                원본 경로: <code>${item.path}</code>
+                            </p>
+                        </div>
+                    `;
+                toggleLoading(false);
+                return;
+            }
+
+            // 텍스트 콘텐츠 또는 실제 이미지 경로 fetch 시도
+            const response = await fetch(item.path);
+
+            if (!response.ok) {
+                throw new Error(`파일을 불러오지 못했습니다. (경로: ${item.path}, 상태 코드: ${response.status})`);
+            }
+
+            if (item.type === 'text') {
+                // 텍스트 콘텐츠 (글)
+                const textContent = await response.text();
+                const fileExtension = getFileExtension(item.path).toUpperCase();
+
+                viewerContainer.innerHTML = `
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h3 class="text-3xl font-extrabold mb-6 text-primary-blue border-b pb-3">${item.title}</h3>
+
+                            <div class="mb-4 text-gray-600 text-sm">
+                                파일 타입: <strong class="uppercase">${fileExtension}</strong> |
+                                경로: <code>${item.path}</code>
+                            </div>
+
+                            <pre class="whitespace-pre-wrap font-mono p-4 bg-secondary-gray rounded-lg text-sm leading-relaxed border border-gray-200">
+                                ${textContent}
+                            </pre>
+                        </div>
+                    `;
+            } else if (item.type === 'image') {
+                // 이미지 콘텐츠
+                const imageUrl = item.path;
+                const fileExtension = getFileExtension(item.path).toUpperCase();
+
+                viewerContainer.innerHTML = `
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800">${item.title}</h3>
+                            <div class="relative w-full overflow-hidden rounded-xl bg-gray-50 p-2">
+                                <img src="${imageUrl}" alt="${item.title}" class="w-full h-auto object-contain max-h-[70vh] rounded-lg mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/800x600/cccccc/000000?text=Image+Load+Failed';" />
+                            </div>
+                            <p class="mt-4 text-gray-600 text-sm">
+                                파일 타입: <strong class="uppercase">${fileExtension}</strong> |
+                                이미지 경로: <code>${item.path}</code>
+                            </p>
+                        </div>
+                    `;
+            }
+        } catch (error) {
+            console.error("콘텐츠 로딩 중 오류 발생:", error);
+            showError(`콘텐츠 로딩 중 문제가 발생했습니다: ${error.message}`);
+            // 에러 발생 시 뷰어 컨테이너에 에러 메시지 표시
+            viewerContainer.innerHTML = `
+                    <p class="text-red-500 font-medium">콘텐츠를 불러오는 데 실패했습니다. 서버에 파일(경로: ${item.path})이 있는지 확인하거나, 브라우저 콘솔에서 오류를 확인하세요.</p>
+                `;
+
+        } finally {
+            toggleLoading(false);
+        }
+    }
+
+    // 초기화 함수
+    async function initializeApp() {
+        // 1. 외부 JSON 파일에서 콘텐츠 목록을 가져옵니다.
+        await fetchContents();
+
+        // 2. 목록을 렌더링합니다.
+        renderList();
+
+        // 3. 첫 번째 항목을 자동으로 로드합니다.
+        const firstButton = textListContainer.querySelector('button') || imageListContainer.querySelector('button');
+        if (firstButton) {
+            // DOM이 로드된 후 첫 번째 버튼에 클릭 이벤트를 강제 실행
+            setTimeout(() => {
+                firstButton.click();
+            }, 100);
+        } else {
+            viewerContainer.innerHTML = '<p class="text-gray-500">표시할 콘텐츠 목록이 없습니다. Manifest 파일과 그 내용을 확인해주세요.</p>';
+        }
+    }
+
+    // 초기화 시작
+    window.onload = initializeApp;
+
+</script>
+</body>
+</html>
