@@ -1,0 +1,112 @@
+@startuml
+' Simple Java Server - Class Diagram
+
+title Simple Java Server - Class Diagram
+
+package "server.config" {
+  class ServerConfig {
+    +PORT : int
+    +ACCEPT_BACKLOG : int
+    +WORKER_THREADS : int
+    +SOCKET_TIMEOUT_MILLIS : int
+    +MAX_REQUEST_LINE_LENGTH : int
+    +MAX_HEADER_LINE_LENGTH : int
+    +MAX_HEADERS : int
+    +MAX_HEADER_SECTION_SIZE : int
+    +MAX_BODY_SIZE : int
+    +KEEP_ALIVE_TIMEOUT_MILLIS : int
+    +KEEP_ALIVE_MAX_REQUESTS : int
+    +WEB_ROOT : Path
+    +SERVER_NAME : String
+  }
+}
+
+package "server.util" {
+  class Logger <<utility>>
+  class MimeTypes <<utility>>
+}
+
+package "server.http" {
+  class HttpRequest {
+    -method : String
+    -target : String
+    -version : String
+    -headers : Map<String,String>
+    -body : byte[]
+  }
+  class HttpResponse {
+    -statusCode : int
+    -reasonPhrase : String
+    -headers : Map<String,String>
+    -body : byte[]
+  }
+  class "HttpResponse.Builder" as HttpResponseBuilder
+  class HttpRequestParser
+  class HttpResponseWriter
+  class ConnectionPolicy
+  class HttpParseException
+}
+
+package "server.route" {
+  interface Handler {
+    +handle(req : HttpRequest) : HttpResponse
+  }
+  class Router {
+    -staticFileHandler : Handler
+  }
+  class StaticFileHandler {
+    -root : Path
+  }
+}
+
+package "server.core" {
+  class NetAcceptor {
+    -router : Router
+    -executor : ExecutorService
+    -serverSocket : ServerSocket
+    -running : boolean
+  }
+  class ConnectionWorker {
+    -socket : Socket
+    -router : Router
+    -parser : HttpRequestParser
+    -policy : ConnectionPolicy
+    -writer : HttpResponseWriter
+  }
+}
+
+package "server" {
+  class ServerMain {
+    +main(args : String[])
+    -ensureWebRoot()
+  }
+}
+
+ServerMain --> StaticFileHandler
+ServerMain --> Router
+ServerMain --> NetAcceptor
+
+NetAcceptor --> Router
+NetAcceptor --> ConnectionWorker
+NetAcceptor --> ServerConfig
+NetAcceptor --> Logger
+
+ConnectionWorker --> Router
+ConnectionWorker --> HttpRequestParser
+ConnectionWorker --> ConnectionPolicy
+ConnectionWorker --> HttpResponseWriter
+ConnectionWorker --> Logger
+
+HttpRequestParser --> HttpRequest
+HttpRequestParser --> HttpParseException
+
+Router --> Handler
+StaticFileHandler ..|> Handler
+StaticFileHandler --> MimeTypes
+StaticFileHandler --> HttpResponse
+
+ConnectionPolicy --> HttpResponseBuilder
+HttpResponseWriter --> HttpResponse
+HttpResponseWriter --> ServerConfig
+
+@enduml
