@@ -11,10 +11,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+
 import server.config.ServerConfig;
 import server.filter.Filter;
 import server.route.Router;
 import server.util.Logger;
+import server.util.SslContextProvider;
 
 /**
  * 클라이언트 연결을 받아 ConnectionWorker에 위임하는 구성 요소.
@@ -39,12 +43,11 @@ public final class NetAcceptor implements Closeable {
                 return;
             }
             executor = Executors.newFixedThreadPool(ServerConfig.WORKER_THREADS);
-            serverSocket = new ServerSocket();
-            serverSocket.bind(new InetSocketAddress(ServerConfig.PORT), ServerConfig.ACCEPT_BACKLOG);
+            serverSocket = createServerSocket();
             serverSocket.setSoTimeout(1000);
             running = true;
         }
-        Logger.info("Server listening on port " + ServerConfig.PORT);
+        Logger.info((ServerConfig.HTTPS_ENABLED ? "HTTPS" : "HTTP") + " server listening on port " + ServerConfig.PORT);
         try {
             while (isRunning()) {
                 try {
@@ -101,5 +104,18 @@ public final class NetAcceptor implements Closeable {
             executor = null;
         }
         serverSocket = null;
+    }
+
+    private ServerSocket createServerSocket() throws IOException {
+        if (!ServerConfig.HTTPS_ENABLED) {
+            ServerSocket socket = new ServerSocket();
+            socket.bind(new InetSocketAddress(ServerConfig.PORT), ServerConfig.ACCEPT_BACKLOG);
+            return socket;
+        }
+        SSLServerSocketFactory factory = SslContextProvider.serverSocketFactory();
+        SSLServerSocket socket = (SSLServerSocket) factory.createServerSocket(ServerConfig.PORT, ServerConfig.ACCEPT_BACKLOG);
+        socket.setEnabledProtocols(ServerConfig.ENABLED_PROTOCOLS);
+        socket.setNeedClientAuth(false);
+        return socket;
     }
 }

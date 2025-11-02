@@ -33,6 +33,7 @@ server/model/Session.class
 server/service/AuthService$LoginResult.class
 server/util/Logger.class
 server/util/CookieUtil.class
+server/util/SslContextProvider.class
 server/service/AuthService.class
 server/route/PostCreationHandler.class
 server/util/MimeTypes.class

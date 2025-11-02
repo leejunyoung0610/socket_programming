@@ -29,6 +29,7 @@
 /home/barrack/sejong/socket_programming/src/main/java/server/model/Session.java
 /home/barrack/sejong/socket_programming/src/main/java/server/service/SessionManager.java
 /home/barrack/sejong/socket_programming/src/main/java/server/filter/ContentTypeFilter.java
+/home/barrack/sejong/socket_programming/src/main/java/server/util/SslContextProvider.java
 /home/barrack/sejong/socket_programming/src/main/java/server/ServerMain.java
 /home/barrack/sejong/socket_programming/src/main/java/server/util/Logger.java
 /home/barrack/sejong/socket_programming/src/main/java/server/util/JsonUtil.java

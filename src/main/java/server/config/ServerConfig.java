@@ -12,7 +12,7 @@ public final class ServerConfig {
     private ServerConfig() {}
 
     /** 서버가 바인딩할 포트 번호 */
-    public static final int PORT = 80;
+    public static final int PORT = 443;
 
     /** 대기열에 쌓을 수 있는 최대 연결 수 */
     public static final int ACCEPT_BACKLOG = 128;
@@ -49,4 +49,15 @@ public final class ServerConfig {
 
     /** Server 헤더에 노출할 서버 식별자 */
     public static final String SERVER_NAME = "SimpleJavaServer/0.1";
+
+    /** HTTPS 사용 여부 */
+    public static final boolean HTTPS_ENABLED = true;
+
+    /** TLS 서버에 사용할 키스토어 정보 */
+    public static final String KEYSTORE_TYPE = "PKCS12";
+    public static final Path KEYSTORE_PATH = Paths.get("config", "simple-server.p12");
+    public static final String KEYSTORE_PASSWORD = "123123";
+
+    /** 허용할 TLS 프로토콜 목록 */
+    public static final String[] ENABLED_PROTOCOLS = {"TLSv1.3", "TLSv1.2"};
 }
