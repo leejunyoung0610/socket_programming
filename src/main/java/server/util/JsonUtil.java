@@ -94,6 +94,24 @@ public final class JsonUtil {
         return toSimpleJson(response);
     }
 
+    public static String createListResponse(boolean success, String message, java.util.List<String> items) {
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+        json.append("\"success\":\"").append(success).append("\",");
+        json.append("\"message\":\"").append(escapeJson(message != null ? message : "")).append("\",");
+        json.append("\"posts\":[");
+        if (items != null && !items.isEmpty()) {
+            for (int i = 0; i < items.size(); i++) {
+                if (i > 0) {
+                    json.append(",");
+                }
+                json.append("\"").append(escapeJson(items.get(i))).append("\"");
+            }
+        }
+        json.append("]}");
+        return json.toString();
+    }
+
     /**
      * 따옴표 제거
      */
@@ -107,7 +125,7 @@ public final class JsonUtil {
     /**
      * JSON 문자열 이스케이프
      */
-    private static String escapeJson(String str) {
+    public static String escapeJson(String str) {
         if (str == null) {
             return "";
         }

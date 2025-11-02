@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>콘텐츠 갤러리 및 뷰어 (외부 Manifest 로딩)</title>
-    <!-- Tailwind CSS 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,61 +25,59 @@
         #content-list {
             max-height: calc(100vh - 4rem); /* 헤더 높이를 제외 */
             overflow-y: auto;
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
         #content-list::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
 
-<!-- 헤더 -->
 <header class="bg-white shadow-md p-4 sticky top-0 z-10">
     <h1 class="text-2xl font-bold text-primary-blue">
-        📦 콘텐츠 갤러리 및 뷰어 (외부 Manifest 로딩)
+        📦 콘텐츠 갤러리 및 뷰어
     </h1>
     <p class="text-sm text-gray-500 mt-1">
         왼쪽 목록에서 항목을 선택하면 콘텐츠가 로드됩니다.
     </p>
 </header>
 
-<!-- 메인 레이아웃 (반응형 2단 그리드) -->
 <main class="flex flex-1 overflow-hidden">
 
-    <!-- 1. 콘텐츠 목록 섹션 (사이드바) -->
     <aside id="content-list" class="w-full md:w-1/4 bg-secondary-gray border-r border-gray-200 p-4 flex-shrink-0">
 
-        <!-- 글 섹션 컨테이너 -->
+        <button onclick="showPostModal()"
+                class="w-full bg-primary-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mb-2 shadow-md flex items-center justify-center">
+            <span class="text-xl mr-2">+</span> 글 추가하기
+        </button>
+        <button id="logout-button"
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 mb-4 shadow-md">
+            로그아웃
+        </button>
+
         <h2 class="text-lg font-semibold mb-3 mt-1 text-gray-700 border-b pb-2 flex items-center">
             <span class="text-xl mr-2">📝</span> 글 섹션
         </h2>
         <ul id="text-list-container" class="space-y-2 mb-6">
-            <!-- JS로 글 목록 채우기 -->
         </ul>
 
-        <!-- 이미지 섹션 컨테이너 -->
         <h2 class="text-lg font-semibold mb-3 mt-6 text-gray-700 border-b pb-2 flex items-center">
             <span class="text-xl mr-2">🖼️</span> 이미지 섹션
         </h2>
         <ul id="image-list-container" class="space-y-2">
-            <!-- JS로 이미지 목록 채우기 -->
         </ul>
 
-        <!-- 로딩 메시지를 목록 컨테이너 내부로 이동하여 로딩 상태를 표시 -->
         <div id="sidebar-loading-message" class="text-center p-4">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-blue mx-auto"></div>
             <p class="text-sm text-primary-blue mt-2">콘텐츠 목록 로딩 중...</p>
         </div>
 
-        <!-- 메인 뷰어 로딩 메시지 (기존 위치 유지) -->
         <div id="loading-message" class="text-center p-4 hidden">
-            <!-- 이 메시지는 콘텐츠 로딩 시에만 사용됩니다. -->
         </div>
     </aside>
 
-    <!-- 2. 콘텐츠 뷰어 섹션 (메인 영역) -->
     <section id="content-viewer" class="flex-1 p-6 overflow-y-auto bg-white">
         <div id="viewer-container" class="max-w-4xl mx-auto">
             <h2 class="text-xl font-bold mb-4 text-gray-700">콘텐츠를 선택해 주세요</h2>
@@ -89,7 +86,6 @@
             </p>
         </div>
 
-        <!-- 에러 메시지 표시 영역 -->
         <div id="error-box" class="hidden mt-8 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
             <strong class="font-bold">⚠️ 오류 발생:</strong>
             <span class="block sm:inline" id="error-message"></span>
@@ -98,13 +94,69 @@
 
 </main>
 
-<script>
-    // === 동적 로딩을 위한 설정: 외부 JSON 파일 경로 ===
-    // 사용자가 업데이트할 목록 파일 경로입니다.
-    const API_URL = '/content_manifest.json';
+<div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 m-4 relative">
+        <h3 class="text-xl font-bold mb-4 text-red-600 border-b pb-2">⚠️ 삭제 확인</h3>
+        <p id="confirm-message" class="mb-6 text-gray-700">정말로 "<span id="delete-item-title" class="font-semibold"></span>" 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
 
-    // 현재 로드된 콘텐츠 목록을 저장할 변수
+        <div class="flex justify-end space-x-3">
+            <button id="cancel-delete-button" type="button"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-150">
+                취소
+            </button>
+            <button id="execute-delete-button" type="button"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-150">
+                영구 삭제
+            </button>
+        </div>
+    </div>
+</div>
+<div id="post-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 m-4 relative">
+
+        <h3 class="text-2xl font-bold mb-4 text-primary-blue border-b pb-2">📝 새 글 작성하기</h3>
+
+        <form id="post-form" onsubmit="event.preventDefault(); submitPost();">
+            <div class="mb-4">
+                <label for="post-title" class="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                <input type="text" id="post-title" required
+                       class="w-full p-2 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+            </div>
+            <div class="mb-6">
+                <label for="post-content" class="block text-sm font-medium text-gray-700 mb-1">글 내용</label>
+                <textarea id="post-content" rows="8" required
+                          class="w-full p-2 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="hidePostModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-150">
+                    취소
+                </button>
+                <button type="submit" id="submit-button"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary-blue rounded-lg hover:bg-blue-700 transition duration-150">
+                    작성 완료 및 저장
+                </button>
+            </div>
+
+            <div id="post-message" class="mt-4 p-3 text-sm rounded-lg hidden"></div>
+        </form>
+
+        <button onclick="hidePostModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+</div>
+<script>
+    // === 환경 설정 ===
+    const API_MANIFEST_URL = '/content_manifest.json';
+    const API_POST_URL = '/posts/create'; // 게시글 등록 (POST)
+    const API_DELETE_URL = '/posts/delete'; // 게시글 삭제 (POST)
+    const API_POST_LIST_URL = '/posts/list'; // 게시글 목록 (POST)
+    const API_LOGOUT_URL = '/logout';
+
     let contents = [];
+    let currentDeleteItem = null; // 삭제 대상 게시글 객체
 
     // DOM 요소 참조
     const textListContainer = document.getElementById('text-list-container');
@@ -114,10 +166,29 @@
     const errorMessage = document.getElementById('error-message');
     const loadingMessage = document.getElementById('loading-message');
     const sidebarLoadingMessage = document.getElementById('sidebar-loading-message');
+    const logoutButton = document.getElementById('logout-button');
+
+    // 모달 관련 DOM 참조
+    const postModal = document.getElementById('post-modal');
+    const postForm = document.getElementById('post-form');
+    const postTitleInput = document.getElementById('post-title');
+    const postContentTextarea = document.getElementById('post-content');
+    const postMessageDiv = document.getElementById('post-message');
+    const submitButton = document.getElementById('submit-button');
+
+    // 삭제 모달 관련 DOM 참조
+    const confirmModal = document.getElementById('confirm-modal');
+    const deleteItemTitleSpan = document.getElementById('delete-item-title');
+    const executeDeleteButton = document.getElementById('execute-delete-button');
+    const cancelDeleteButton = document.getElementById('cancel-delete-button');
+
+
+    // =========================================================================
+    // === 유틸리티 함수 ===
+    // =========================================================================
 
     /**
      * @description 에러 메시지를 표시합니다.
-     * @param {string} msg - 표시할 오류 메시지
      */
     function showError(msg) {
         errorBox.classList.remove('hidden');
@@ -133,17 +204,16 @@
     }
 
     /**
-     * @description 메인 뷰어의 로딩 상태를 토글합니다.
-     * @param {boolean} isLoading - 로딩 상태 여부
+     * @description 파일 경로에서 파일 확장자를 추출하여 타입을 반환합니다.
      */
-    function toggleLoading(isLoading) {
-        if (isLoading) {
-            viewerContainer.innerHTML = ''; // 기존 내용 삭제
-            loadingMessage.classList.remove('hidden');
-        } else {
-            loadingMessage.classList.add('hidden');
-        }
+    function getFileExtension(path) {
+        return path.split('.').pop();
     }
+
+
+    // =========================================================================
+    // === 목록 로딩 및 렌더링 함수 ===
+    // =========================================================================
 
     /**
      * @description 외부 JSON 파일로부터 콘텐츠 목록을 비동기적으로 가져옵니다.
@@ -152,18 +222,14 @@
         sidebarLoadingMessage.classList.remove('hidden');
 
         try {
-            console.log('Fetching manifest from:', API_URL); // 디버깅 로그 1: 로드 시작
             // 외부 JSON 파일 fetch 시도
-            const response = await fetch(API_URL);
+            const response = await fetch(API_MANIFEST_URL);
 
             if (!response.ok) {
-                throw new Error(`목록 파일 로드 실패: ${response.status} ${response.statusText}. CORS/경로 확인 필요.`);
+                throw new Error(`목록 파일 로드 실패: ${response.status} ${response.statusText}`);
             }
 
-            // JSON 파싱
             contents = await response.json();
-
-            console.log('Manifest loaded successfully. Item count:', contents.length); // 디버깅 로그 2: 성공 및 항목 수 확인
 
             if (!Array.isArray(contents)) {
                 throw new Error("콘텐츠 Manifest 파일의 형식이 올바르지 않습니다. JSON 배열이어야 합니다.");
@@ -171,103 +237,182 @@
 
         } catch (error) {
             console.error("콘텐츠 목록 로딩 중 오류 발생:", error);
-            // 사이드바에 오류 메시지 표시
             textListContainer.innerHTML = `<li class="text-red-500 text-sm">목록 로딩 실패: ${error.message}</li>`;
             imageListContainer.innerHTML = '';
         } finally {
             sidebarLoadingMessage.classList.add('hidden');
         }
+        const postItems = await fetchPostList();
+        mergePostItems(postItems);
     }
 
     /**
      * @description 콘텐츠 목록을 사이드바에 렌더링합니다.
      */
     function renderList() {
-        textListContainer.innerHTML = ''; // 글 목록 초기화
-        imageListContainer.innerHTML = ''; // 이미지 목록 초기화
+        textListContainer.innerHTML = '';
+        imageListContainer.innerHTML = '';
 
         const textItems = contents.filter(item => item.type === 'text');
         const imageItems = contents.filter(item => item.type === 'image');
 
-        // 글 섹션 렌더링
         if (textItems.length > 0) {
             textItems.forEach(item => { appendListItem(item, textListContainer); });
         } else {
-            textListContainer.innerHTML = `<li class="text-gray-500 text-sm">표시할 글이 없습니다.</li>`;
+            textListContainer.innerHTML = `<li class="text-gray-500 text-sm p-3">표시할 글이 없습니다.</li>`;
         }
 
-        // 이미지 섹션 렌더링
         if (imageItems.length > 0) {
             imageItems.forEach(item => { appendListItem(item, imageListContainer); });
         } else {
-            imageListContainer.innerHTML = `<li class="text-gray-500 text-sm">표시할 이미지가 없습니다.</li>`;
+            imageListContainer.innerHTML = `<li class="text-gray-500 text-sm p-3">표시할 이미지가 없습니다.</li>`;
         }
     }
 
     /**
      * @description 단일 목록 항목을 생성하고 컨테이너에 추가합니다.
-     * @param {object} item - 콘텐츠 항목 객체
-     * @param {HTMLElement} container - 항목을 추가할 <ul> 컨테이너
      */
     function appendListItem(item, container) {
         const li = document.createElement('li');
-        const button = document.createElement('button');
+        li.className = 'group relative'; // 마우스 오버 감지를 위한 group 클래스 추가
 
-        // 항목 타입에 따른 아이콘 설정
+        // 콘텐츠 로딩 버튼
+        const button = document.createElement('button');
         const icon = item.type === 'text'
             ? '<span class="mr-2 text-primary-blue">📖</span>'
             : '<span class="mr-2 text-primary-blue">📷</span>';
 
         button.className = 'w-full text-left p-3 rounded-lg hover:bg-white transition duration-200 flex items-center shadow-sm';
-        button.innerHTML = `${icon} <span class="truncate">${item.title}</span>`;
+        button.innerHTML = `${icon} <span class="truncate pr-10">${item.title}</span>`;
 
-        // 클릭 이벤트 핸들러
         button.onclick = (e) => loadContent(item, e.currentTarget);
 
         li.appendChild(button);
+
+        // 텍스트 타입인 경우에만 삭제 버튼 추가
+        if (item.type === 'text') {
+            const deleteBtn = document.createElement('button');
+            // 휴지통 아이콘 (Lucide Icon SVG 사용)
+            deleteBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                `;
+            deleteBtn.className = 'absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-red-500 hover:text-red-700 transition duration-150 rounded-full bg-secondary-gray/50 hidden group-hover:block z-10';
+
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation(); // 목록 클릭 이벤트 방지
+                confirmAndDeletePost(item);
+            };
+
+            li.appendChild(deleteBtn);
+        }
+
         container.appendChild(li);
     }
 
+    // =========================================================================
+    // === 콘텐츠 뷰어 함수 ===
+    // =========================================================================
+
     /**
-     * @description 파일 경로에서 파일 확장자를 추출하여 타입을 반환합니다.
-     * @param {string} path - 파일 경로
-     * @returns {string} - 파일 확장자 (예: 'md', 'txt', 'jpg')
+     * @description 메인 뷰어의 로딩 상태를 토글합니다.
      */
-    function getFileExtension(path) {
-        return path.split('.').pop();
+    function toggleLoading(isLoading) {
+        if (isLoading) {
+            viewerContainer.innerHTML = '';
+            loadingMessage.classList.remove('hidden');
+        } else {
+            loadingMessage.classList.add('hidden');
+        }
     }
+    async function fetchPostList() {
+        try {
+            const res = await fetch(API_POST_LIST_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}'
+            });
+            if (!res.ok) {
+                throw new Error('게시글 목록 요청 실패: ' + res.status);
+            }
+            const data = await res.json();
+            if (data.success !== 'true' || !Array.isArray(data.posts)) {
+                return [];
+            }
+            return data.posts.map(filename => ({
+                id: 'post-' + filename,
+                title: filename,
+                path: '/posts/' + filename,
+                type: 'text'
+            }));
+        } catch (error) {
+            console.warn('게시글 목록을 불러오지 못했습니다.', error);
+            return [];
+        }
+    }
+
+    function mergePostItems(items) {
+        if (!Array.isArray(items)) {
+            return;
+        }
+        const existing = new Set(contents.map(item => item.path));
+        items.forEach(item => {
+            if (!existing.has(item.path)) {
+                contents.push(item);
+            }
+        });
+    }
+
 
 
     /**
      * @description API 경로에서 콘텐츠를 가져와 뷰어에 표시합니다.
-     * @param {object} item - Manifest에 정의된 콘텐츠 항목 객체
-     * @param {HTMLElement} clickedButton - 현재 클릭된 버튼 요소
      */
     async function loadContent(item, clickedButton) {
-        // 모든 목록 버튼에서 active 스타일 제거
         document.querySelectorAll('#content-list button').forEach(btn => {
-            btn.classList.remove('bg-white', 'font-bold', 'text-primary-blue', 'ring-2', 'ring-primary-blue');
+            // delete button이 아닌 load content button만 처리
+            if (!btn.classList.contains('text-red-500')) {
+                btn.classList.remove('bg-white', 'font-bold', 'text-primary-blue', 'ring-2', 'ring-primary-blue');
+            }
         });
+        // delete button에 대한 스타일이 겹치지 않도록 주의
+        if (!clickedButton.classList.contains('text-red-500')) {
+            clickedButton.classList.add('bg-white', 'font-bold', 'text-primary-blue', 'ring-2', 'ring-primary-blue');
+        }
 
-        // 현재 클릭된 버튼에 active 스타일 추가
-        clickedButton.classList.add('bg-white', 'font-bold', 'text-primary-blue', 'ring-2', 'ring-primary-blue');
 
         hideError();
         toggleLoading(true);
 
         try {
-            // 이미지가 placeholder 설정되어 있을 경우, 실제 fetch 대신 placeholder 이미지 사용
-            if (item.type === 'image' && item.placeholder) {
-                const imageUrl = `https://placehold.co/${item.placeholder}`;
+            // --- 이미지 로드 로직 (플레이스홀더 및 실제 파일) ---
+            if (item.type === 'image') {
+                const fileExtension = getFileExtension(item.path).toUpperCase();
+                let imageUrl = item.path;
+
+                if (item.placeholder) { // 플레이스홀더 사용
+                    imageUrl = `https://placehold.co/${item.placeholder}`;
+                    console.log('[Image Load] Using Placeholder:', imageUrl);
+                } else { // 실제 파일 로드 시도
+                    console.log('[Image Load] Attempting to load actual file:', item.path);
+                }
+
+                // 이미지 로드 시에는 fetch 대신 <img> 태그 자체를 사용하여 브라우저가 로드를 담당하게 합니다.
+                // 대신, 로드에 실패하면 onerror 이벤트로 처리합니다.
+
                 viewerContainer.innerHTML = `
-                        <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                             <h3 class="text-2xl font-bold mb-4 text-gray-800">${item.title}</h3>
                             <div class="relative w-full overflow-hidden rounded-xl bg-gray-50 p-2">
-                                <img src="${imageUrl}" alt="${item.title}" class="w-full h-auto object-cover rounded-lg" onerror="this.onerror=null;this.src='https://placehold.co/800x600/cccccc/000000?text=Image+Load+Failed';" />
+                                <img src="${imageUrl}" alt="${item.title}"
+                                     class="w-full h-auto object-contain max-h-[70vh] rounded-lg mx-auto"
+                                     onerror="handleImageLoadError(this, '${item.path}')" />
                             </div>
                             <p class="mt-4 text-gray-600 text-sm">
-                                이미지 타입: <strong>JPG/PNG (플레이스홀더)</strong> |
-                                원본 경로: <code>${item.path}</code>
+                                ID: <strong class="font-bold text-gray-800">${item.id}</strong> |
+                                파일 타입: <strong class="uppercase">${fileExtension}</strong> |
+                                이미지 경로: <code>${item.path}</code>
                             </p>
                         </div>
                     `;
@@ -275,7 +420,7 @@
                 return;
             }
 
-            // 텍스트 콘텐츠 또는 실제 이미지 경로 fetch 시도
+            // --- 텍스트 콘텐츠 로드 로직 ---
             const response = await fetch(item.path);
 
             if (!response.ok) {
@@ -283,7 +428,6 @@
             }
 
             if (item.type === 'text') {
-                // 텍스트 콘텐츠 (글)
                 const textContent = await response.text();
                 const fileExtension = getFileExtension(item.path).toUpperCase();
 
@@ -292,6 +436,7 @@
                             <h3 class="text-3xl font-extrabold mb-6 text-primary-blue border-b pb-3">${item.title}</h3>
 
                             <div class="mb-4 text-gray-600 text-sm">
+                                ID: <strong class="font-bold text-gray-800">${item.id}</strong> |
                                 파일 타입: <strong class="uppercase">${fileExtension}</strong> |
                                 경로: <code>${item.path}</code>
                             </div>
@@ -301,58 +446,245 @@
                             </pre>
                         </div>
                     `;
-            } else if (item.type === 'image') {
-                // 이미지 콘텐츠
-                const imageUrl = item.path;
-                const fileExtension = getFileExtension(item.path).toUpperCase();
-
-                viewerContainer.innerHTML = `
-                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                            <h3 class="text-2xl font-bold mb-4 text-gray-800">${item.title}</h3>
-                            <div class="relative w-full overflow-hidden rounded-xl bg-gray-50 p-2">
-                                <img src="${imageUrl}" alt="${item.title}" class="w-full h-auto object-contain max-h-[70vh] rounded-lg mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/800x600/cccccc/000000?text=Image+Load+Failed';" />
-                            </div>
-                            <p class="mt-4 text-gray-600 text-sm">
-                                파일 타입: <strong class="uppercase">${fileExtension}</strong> |
-                                이미지 경로: <code>${item.path}</code>
-                            </p>
-                        </div>
-                    `;
             }
         } catch (error) {
             console.error("콘텐츠 로딩 중 오류 발생:", error);
             showError(`콘텐츠 로딩 중 문제가 발생했습니다: ${error.message}`);
-            // 에러 발생 시 뷰어 컨테이너에 에러 메시지 표시
-            viewerContainer.innerHTML = `
-                    <p class="text-red-500 font-medium">콘텐츠를 불러오는 데 실패했습니다. 서버에 파일(경로: ${item.path})이 있는지 확인하거나, 브라우저 콘솔에서 오류를 확인하세요.</p>
-                `;
+            viewerContainer.innerHTML = `<p class="text-red-500 font-medium">콘텐츠를 불러오는 데 실패했습니다. 서버에 파일(경로: ${item.path})이 있는지 확인하세요.</p>`;
 
         } finally {
             toggleLoading(false);
         }
     }
 
-    // 초기화 함수
-    async function initializeApp() {
-        // 1. 외부 JSON 파일에서 콘텐츠 목록을 가져옵니다.
-        await fetchContents();
+    /**
+     * @description 이미지 로드 실패 시 호출됩니다.
+     */
+    function handleImageLoadError(imgElement, path) {
+        imgElement.onerror = null; // 재호출 방지
+        imgElement.src = 'https://placehold.co/800x600/cccccc/000000?text=Image+Load+Failed'; // 대체 이미지 표시
 
-        // 2. 목록을 렌더링합니다.
+        // 에러 메시지 업데이트
+        const parentP = imgElement.closest('.bg-white').querySelector('p.text-gray-600');
+        if (parentP) {
+            parentP.innerHTML = `
+                     <span class="text-red-500 font-bold">⚠️ 이미지 로드 실패:</span> 서버 경로 <code>${path}</code>에 파일이 없거나 접근할 수 없습니다.
+                 `;
+        }
+        console.error(`Failed to load image at: ${path}. Check server directory /images/.`);
+    }
+
+
+    // =========================================================================
+    // === 글쓰기 모달 함수 (POST) ===
+    // =========================================================================
+
+    /**
+     * @description 글쓰기 모달을 표시하고 폼을 초기화합니다.
+     */
+    function showPostModal() {
+        postModal.classList.remove('hidden');
+        postModal.classList.add('flex');
+        postForm.reset(); // 폼 내용 초기화
+        postMessageDiv.classList.add('hidden'); // 메시지 숨김
+        submitButton.disabled = false;
+    }
+
+    /**
+     * @description 글쓰기 모달을 숨깁니다.
+     */
+    function hidePostModal() {
+        postModal.classList.add('hidden');
+        postModal.classList.remove('flex');
+    }
+
+    /**
+     * @description 작성된 글을 서버로 POST 요청합니다.
+     */
+    async function submitPost() {
+        const title = postTitleInput.value.trim();
+        const content = postContentTextarea.value.trim();
+
+        postMessageDiv.classList.add('hidden');
+        submitButton.disabled = true;
+
+        if (title === '' || content === '') {
+            displayPostMessage('제목과 내용을 모두 입력해 주세요.', 'bg-yellow-100 text-yellow-800');
+            submitButton.disabled = false;
+            return;
+        }
+
+        try {
+            const response = await fetch(API_POST_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`[${response.status}] ${response.statusText}. ${errorBody.substring(0, 100)}...`);
+            }
+
+            const data = await response.json();
+            if (data.success !== 'true') {
+                throw new Error(data.message || '서버에서 실패 응답을 반환했습니다.');
+            }
+
+            displayPostMessage('✅ 글 작성이 완료되었습니다.', 'bg-green-100 text-green-800');
+            postForm.reset();
+            setTimeout(() => {
+                hidePostModal();
+                initializeApp();
+            }, 1500);
+
+        } catch (error) {
+            console.error('POST 요청 중 오류 발생:', error);
+            displayPostMessage(`❌ 글 저장 실패: ${error.message}`, 'bg-red-100 text-red-800');
+            submitButton.disabled = false;
+            return;
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+    /**
+     * @description 모달 내부에 메시지를 표시합니다.
+     */
+    function displayPostMessage(message, className) {
+        postMessageDiv.textContent = message;
+        postMessageDiv.className = `mt-4 p-3 text-sm rounded-lg ${className}`;
+        postMessageDiv.classList.remove('hidden');
+    }
+
+
+    async function handleLogout() {
+        try {
+            const res = await fetch(API_LOGOUT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}'
+            });
+            if (!res.ok) {
+                throw new Error('로그아웃 요청 실패: ' + res.status);
+            }
+            alert('로그아웃되었습니다.');
+            window.location.href = '/login.html';
+        } catch (error) {
+            alert('로그아웃 실패: ' + error.message);
+        }
+    }
+
+    // =========================================================================
+    // === 삭제 함수 (DELETE) ===
+    // =========================================================================
+
+    /**
+     * @description 삭제 확인 모달을 표시하고 삭제할 ID를 저장합니다.
+     */
+    function confirmAndDeletePost(item) {
+        currentDeleteItem = item;
+        deleteItemTitleSpan.textContent = item.title;
+
+        confirmModal.classList.remove('hidden');
+        confirmModal.classList.add('flex');
+    }
+
+    /**
+     * @description 삭제 확인 모달을 숨깁니다.
+     */
+    function hideConfirmModal() {
+        confirmModal.classList.add('hidden');
+        confirmModal.classList.remove('flex');
+        currentDeleteItem = null; // ID 초기화
+    }
+
+    /**
+     * @description 서버에 DELETE 요청을 보냅니다. (전역 변수 currentDeleteItem 사용)
+     */
+    async function deletePost() {
+        const itemToDelete = currentDeleteItem;
+        if (!itemToDelete) {
+            showError('삭제할 항목 정보가 없습니다.');
+            return;
+        }
+
+        toggleLoading(true);
+        hideError();
+
+        try {
+            const filename = itemToDelete.path.split('/').pop();
+            const response = await fetch(API_DELETE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`[${response.status}] ${response.statusText}. ${errorBody.substring(0, 100)}...`);
+            }
+
+            alert('게시글이 삭제되었습니다.');
+            hideConfirmModal();
+            initializeApp();
+
+        } catch (error) {
+            console.error('삭제 요청 중 오류 발생:', error);
+            showError(`삭제 실패: ${error.message}`);
+            toggleLoading(false);
+        }
+    }
+
+    /**
+     * @description 삭제 모달 버튼에 이벤트 리스너를 한 번만 바인딩합니다.
+     */
+    function bindDeleteModalListeners() {
+        // executeDeleteButton은 항상 deletePost() 함수를 호출합니다.
+        executeDeleteButton.addEventListener('click', deletePost);
+
+        // cancelDeleteButton은 모달을 숨깁니다.
+        cancelDeleteButton.addEventListener('click', hideConfirmModal);
+
+        // 모달 닫기 이벤트(배경 클릭 등)를 처리할 필요는 없으나,
+        // 현재는 버튼 이벤트만 바인딩합니다.
+    }
+
+
+    // =========================================================================
+    // === 초기화 함수 ===
+    // =========================================================================
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            handleLogout();
+        });
+    }
+
+    async function initializeApp() {
+        // 리스너는 앱이 로드될 때 한 번만 바인딩합니다. (중복 방지)
+        if (!window.deleteListenersBound) {
+            bindDeleteModalListeners();
+            window.deleteListenersBound = true;
+        }
+
+        await fetchContents();
         renderList();
 
-        // 3. 첫 번째 항목을 자동으로 로드합니다.
+        // 첫 번째 글 항목의 ID를 가져와서 뷰어에 표시하는 것을 목표로 합니다.
         const firstButton = textListContainer.querySelector('button') || imageListContainer.querySelector('button');
         if (firstButton) {
-            // DOM이 로드된 후 첫 번째 버튼에 클릭 이벤트를 강제 실행
+            // DOM이 렌더링 된 후 클릭을 유발
             setTimeout(() => {
                 firstButton.click();
             }, 100);
         } else {
-            viewerContainer.innerHTML = '<p class="text-gray-500">표시할 콘텐츠 목록이 없습니다. Manifest 파일과 그 내용을 확인해주세요.</p>';
+            viewerContainer.innerHTML = '<p class="text-gray-500">표시할 콘텐츠 목록이 없습니다. Manifest 파일을 확인해주세요.</p>';
+            toggleLoading(false);
         }
     }
 
-    // 초기화 시작
     window.onload = initializeApp;
 
 </script>

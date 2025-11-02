@@ -25,6 +25,7 @@
 /home/barrack/sejong/socket_programming/src/main/java/server/service/UserRepository.java
 /home/barrack/sejong/socket_programming/src/main/java/server/http/HttpRequestParser.java
 /home/barrack/sejong/socket_programming/src/main/java/server/util/MimeTypes.java
+/home/barrack/sejong/socket_programming/src/main/java/server/route/PostListHandler.java
 /home/barrack/sejong/socket_programming/src/main/java/server/model/Session.java
 /home/barrack/sejong/socket_programming/src/main/java/server/service/SessionManager.java
 /home/barrack/sejong/socket_programming/src/main/java/server/filter/ContentTypeFilter.java

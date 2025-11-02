@@ -18,6 +18,7 @@ import server.filter.SessionFilter;
 import server.route.AuthHandler;
 import server.route.PostCreationHandler;
 import server.route.PostDeleteHandler;
+import server.route.PostListHandler;
 import server.route.RoutedPostHandler;
 import server.route.Router;
 import server.route.SimplePostHandler;
@@ -38,8 +39,9 @@ public final class ServerMain {
         SimplePostHandler defaultPostHandler = new SimplePostHandler(); // POST 요청을 단순히 에코해주는 핸들러
         AuthHandler authHandler = new AuthHandler(); // 로그인/회원가입 처리 핸들러
         PostService postService = new PostService(); // 게시물 관리를 담당하는 서비스
-        PostCreationHandler postCreationHandler = new PostCreationHandler(postService); //
+        PostCreationHandler postCreationHandler = new PostCreationHandler(postService);
         PostDeleteHandler postDeleteHandler = new PostDeleteHandler(postService);
+        PostListHandler postListHandler = new PostListHandler(postService);
 
         RoutedPostHandler routedPostHandler = new RoutedPostHandler(defaultPostHandler);
         routedPostHandler.register("/login", authHandler);
@@ -47,6 +49,7 @@ public final class ServerMain {
         routedPostHandler.register("/logout", authHandler);
         routedPostHandler.register("/posts/create", postCreationHandler);
         routedPostHandler.register("/posts/delete", postDeleteHandler);
+        routedPostHandler.register("/posts/list", postListHandler);
 
         Router router = new Router(staticHandler, routedPostHandler);
         List<Filter> filters = List.of(
