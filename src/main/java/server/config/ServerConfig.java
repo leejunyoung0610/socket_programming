@@ -12,7 +12,7 @@ public final class ServerConfig {
     private ServerConfig() {}
 
     /** 서버가 바인딩할 포트 번호 */
-    public static final int PORT = 8888;
+    public static final int PORT = 80;
 
     /** 대기열에 쌓을 수 있는 최대 연결 수 */
     public static final int ACCEPT_BACKLOG = 128;
