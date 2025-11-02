@@ -1,6 +1,7 @@
 server/util/JsonUtil.class
 server/core/NetAcceptor.class
 server/route/PostDeleteHandler.class
+server/filter/SessionFilter.class
 server/route/RoutedPostHandler.class
 server/filter/BodyLimitFilter.class
 server/http/HttpResponseWriter.class
@@ -10,7 +11,6 @@ server/core/ConnectionWorker.class
 server/http/HttpResponse$Builder.class
 server/filter/ExceptionMappingFilter.class
 server/http/HttpParseException.class
-server/route/RouterAdapter.class
 server/http/HttpRequestParser.class
 server/service/UserRepository.class
 server/route/Handler.class
@@ -19,14 +19,12 @@ server/config/ServerConfig.class
 server/filter/HeadFilter.class
 server/filter/LoggingFilter.class
 server/filter/Filter.class
-server/route/ExtendedRouter.class
 server/http/HttpRequest.class
 server/service/SessionManager.class
 server/route/Router.class
 server/service/PostService.class
 server/model/User.class
 server/filter/ContentTypeFilter.class
-server/route/AuthenticatedHandler.class
 server/http/HttpResponse.class
 server/route/AuthHandler.class
 server/filter/FilterChain.class

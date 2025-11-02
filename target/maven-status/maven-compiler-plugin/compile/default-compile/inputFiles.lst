@@ -1,6 +1,5 @@
 /home/barrack/sejong/socket_programming/src/main/java/server/filter/HeadFilter.java
 /home/barrack/sejong/socket_programming/src/main/java/server/model/User.java
-/home/barrack/sejong/socket_programming/src/main/java/server/route/RouterAdapter.java
 /home/barrack/sejong/socket_programming/src/main/java/server/config/ServerConfig.java
 /home/barrack/sejong/socket_programming/src/main/java/server/http/ConnectionPolicy.java
 /home/barrack/sejong/socket_programming/src/main/java/server/route/RoutedPostHandler.java
@@ -11,7 +10,6 @@
 /home/barrack/sejong/socket_programming/src/main/java/server/filter/Filter.java
 /home/barrack/sejong/socket_programming/src/main/java/server/core/NetAcceptor.java
 /home/barrack/sejong/socket_programming/src/main/java/server/route/SimplePostHandler.java
-/home/barrack/sejong/socket_programming/src/main/java/server/route/ExtendedRouter.java
 /home/barrack/sejong/socket_programming/src/main/java/server/service/PostService.java
 /home/barrack/sejong/socket_programming/src/main/java/server/route/Router.java
 /home/barrack/sejong/socket_programming/src/main/java/server/http/HttpResponse.java
@@ -26,7 +24,6 @@
 /home/barrack/sejong/socket_programming/src/main/java/server/core/ConnectionWorker.java
 /home/barrack/sejong/socket_programming/src/main/java/server/service/UserRepository.java
 /home/barrack/sejong/socket_programming/src/main/java/server/http/HttpRequestParser.java
-/home/barrack/sejong/socket_programming/src/main/java/server/route/AuthenticatedHandler.java
 /home/barrack/sejong/socket_programming/src/main/java/server/util/MimeTypes.java
 /home/barrack/sejong/socket_programming/src/main/java/server/model/Session.java
 /home/barrack/sejong/socket_programming/src/main/java/server/service/SessionManager.java
@@ -34,6 +31,7 @@
 /home/barrack/sejong/socket_programming/src/main/java/server/ServerMain.java
 /home/barrack/sejong/socket_programming/src/main/java/server/util/Logger.java
 /home/barrack/sejong/socket_programming/src/main/java/server/util/JsonUtil.java
+/home/barrack/sejong/socket_programming/src/main/java/server/filter/SessionFilter.java
 /home/barrack/sejong/socket_programming/src/main/java/server/http/HttpRequest.java
 /home/barrack/sejong/socket_programming/src/main/java/server/filter/FilterChain.java
 /home/barrack/sejong/socket_programming/src/main/java/server/filter/PathTraversalFilter.java

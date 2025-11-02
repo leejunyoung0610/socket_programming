@@ -24,6 +24,10 @@ public final class ErrorResponses {
         return build(415, "Unsupported Media Type", message, home);
     }
 
+    public static HttpResponse unauthorizedAlert(HttpRequest req, String message, String home) {
+        return build(401, "Unauthorized", message, home);
+    }
+
     public static HttpResponse serverErrorAlert(HttpRequest req, String message, String home) {
         return build(500, "Internal Server Error", message, home);
     }

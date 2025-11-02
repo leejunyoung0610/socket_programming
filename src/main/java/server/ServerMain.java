@@ -3,6 +3,7 @@ package server;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Set;
 
 import server.config.ServerConfig;
 import server.core.NetAcceptor;
@@ -13,11 +14,12 @@ import server.filter.Filter;
 import server.filter.HeadFilter;
 import server.filter.LoggingFilter;
 import server.filter.PathTraversalFilter;
+import server.filter.SessionFilter;
 import server.route.AuthHandler;
 import server.route.PostCreationHandler;
 import server.route.PostDeleteHandler;
-import server.route.Router;
 import server.route.RoutedPostHandler;
+import server.route.Router;
 import server.route.SimplePostHandler;
 import server.route.StaticFileHandler;
 import server.service.PostService;
@@ -35,8 +37,8 @@ public final class ServerMain {
         StaticFileHandler staticHandler = new StaticFileHandler(ServerConfig.WEB_ROOT); // www 디렉토리가 루트가 됨
         SimplePostHandler defaultPostHandler = new SimplePostHandler(); // POST 요청을 단순히 에코해주는 핸들러
         AuthHandler authHandler = new AuthHandler(); // 로그인/회원가입 처리 핸들러
-        PostService postService = new PostService();
-        PostCreationHandler postCreationHandler = new PostCreationHandler(postService);
+        PostService postService = new PostService(); // 게시물 관리를 담당하는 서비스
+        PostCreationHandler postCreationHandler = new PostCreationHandler(postService); //
         PostDeleteHandler postDeleteHandler = new PostDeleteHandler(postService);
 
         RoutedPostHandler routedPostHandler = new RoutedPostHandler(defaultPostHandler);
@@ -50,6 +52,11 @@ public final class ServerMain {
         List<Filter> filters = List.of(
                 new LoggingFilter(),
                 new ExceptionMappingFilter("/"),
+                new SessionFilter(
+                        Set.of("/login", "/login.html", "/register", "/register.html"),
+                        Set.of("/login", "/register"),
+                        "/login.html"
+                ),
                 new BodyLimitFilter(ServerConfig.MAX_BODY_SIZE, "/"),
                 ContentTypeFilter.withDefaults("/"),
                 new PathTraversalFilter(ServerConfig.WEB_ROOT, "/"),

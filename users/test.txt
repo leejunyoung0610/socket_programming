@@ -1,4 +1,0 @@
-username:test
-password:7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=
-createdAt:2025-10-31 02:55:58
-lastLoginAt:2025-10-31 02:56:05

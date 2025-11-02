@@ -1,4 +1,0 @@
-sessionId:81bb2bf8-ec18-408d-96e1-3be2e000d80e
-username:test
-createdAt:2025-10-31 02:56:05
-expiresAt:2025-10-31 04:56:05
