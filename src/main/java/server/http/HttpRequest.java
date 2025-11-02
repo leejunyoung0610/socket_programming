@@ -35,6 +35,18 @@ public final class HttpRequest {
         return target;
     }
 
+    /**
+     * 질의 문자열을 제외한 경로를 반환한다.
+     */
+    public String path() {
+        int idx = target.indexOf('?');
+        if (idx == -1) {
+            return target.isEmpty() ? "/" : target;
+        }
+        String path = target.substring(0, idx);
+        return path.isEmpty() ? "/" : path;
+    }
+
     public String version() {
         return version;
     }

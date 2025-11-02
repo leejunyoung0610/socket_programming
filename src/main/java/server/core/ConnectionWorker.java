@@ -1,6 +1,8 @@
 package server.core;
 
 import server.config.ServerConfig;
+import server.filter.Filter;
+import server.filter.FilterChain;
 import server.http.ConnectionPolicy;
 import server.http.HttpParseException;
 import server.http.HttpRequest;
@@ -17,6 +19,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * 단일 TCP 연결에 대한 HTTP 요청/응답 처리를 담당하는 워커.
@@ -26,13 +29,15 @@ public final class ConnectionWorker implements Runnable {
 
     private final Socket socket;
     private final Router router;
+    private final List<Filter> filters;
     private final HttpRequestParser parser;
     private final ConnectionPolicy policy;
     private final HttpResponseWriter writer;
 
-    public ConnectionWorker(Socket socket, Router router) {
+    public ConnectionWorker(Socket socket, Router router, List<Filter> filters) {
         this.socket = socket;
         this.router = router;
+        this.filters = filters;
         this.parser = new HttpRequestParser();
         this.policy = new ConnectionPolicy();
         this.writer = new HttpResponseWriter();
@@ -72,7 +77,8 @@ public final class ConnectionWorker implements Runnable {
 
                 HttpResponse response;
                 try {
-                    response = router.route(request);
+                    FilterChain chain = new FilterChain(filters, router);
+                    response = chain.doFilter(request);
                 } catch (Exception e) {
                     Logger.error("Handler failure", e);
                     response = HttpResponse.builder(500, "Internal Server Error")

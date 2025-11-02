@@ -1,6 +1,7 @@
 package server.core;
 
 import server.config.ServerConfig;
+import server.filter.Filter;
 import server.route.Router;
 import server.util.Logger;
 
@@ -10,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,12 +22,14 @@ import java.util.concurrent.TimeUnit;
  */
 public final class NetAcceptor implements Closeable {
     private final Router router;
+    private final List<Filter> filters;
     private volatile boolean running;
     private ExecutorService executor;
     private ServerSocket serverSocket;
 
-    public NetAcceptor(Router router) {
+    public NetAcceptor(Router router, List<Filter> filters) {
         this.router = router;
+        this.filters = List.copyOf(filters);
     }
 
     public void start() throws IOException {
@@ -46,7 +50,7 @@ public final class NetAcceptor implements Closeable {
                 try {
                     // 새 연결을 수락하면 워커에게 처리하도록 맡긴다.
                     Socket socket = serverSocket.accept();
-                    executor.execute(new ConnectionWorker(socket, router));
+                    executor.execute(new ConnectionWorker(socket, router, filters));
                 } catch (SocketTimeoutException e) {
                     // 1초마다 깨어나서 running 플래그를 점검한다.
                 } catch (IOException e) {

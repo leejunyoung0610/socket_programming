@@ -1,15 +1,22 @@
 package server;
 
-/* 전부 직접 작성한 커스텀 라이브러리 */
-import java.io.IOException; /* 서버 설정 파일 import*/
-import java.nio.file.Files; /* 네트워크 수락기 import */
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
 
-import server.config.ServerConfig; /* 라우터 import */
-import server.core.NetAcceptor; /* 인증 핸들러 import */
-import server.route.AuthHandler; /* 정적 파일 핸들러 import */
+import server.config.ServerConfig;
+import server.core.NetAcceptor;
+import server.filter.BodyLimitFilter;
+import server.filter.ContentTypeFilter;
+import server.filter.ExceptionMappingFilter;
+import server.filter.Filter;
+import server.filter.HeadFilter;
+import server.filter.LoggingFilter;
+import server.filter.PathTraversalFilter;
+import server.route.AuthHandler;
 import server.route.PostCreationHandler;
 import server.route.PostDeleteHandler;
-import server.route.Router; /* 로거 유틸리티 import */
+import server.route.Router;
 import server.route.RoutedPostHandler;
 import server.route.SimplePostHandler;
 import server.route.StaticFileHandler;
@@ -40,8 +47,16 @@ public final class ServerMain {
         routedPostHandler.register("/posts/delete", postDeleteHandler);
 
         Router router = new Router(staticHandler, routedPostHandler);
+        List<Filter> filters = List.of(
+                new LoggingFilter(),
+                new ExceptionMappingFilter("/"),
+                new BodyLimitFilter(ServerConfig.MAX_BODY_SIZE, "/"),
+                ContentTypeFilter.withDefaults("/"),
+                new PathTraversalFilter(ServerConfig.WEB_ROOT, "/"),
+                new HeadFilter()
+        );
         // NetAcceptor가 실질적으로 소켓 수락과 워커 스케줄링을 담당한다.
-        NetAcceptor acceptor = new NetAcceptor(router);
+        NetAcceptor acceptor = new NetAcceptor(router, filters);
         // JVM 종료 시점에도 서버가 깔끔히 내려가도록 훅을 등록한다.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
